@@ -1,0 +1,60 @@
+version: '3.8'
+services:
+  mysql-chat-service:
+    image: mysql:8.0
+    container_name: mysql-chat-db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: chatdb
+      MYSQL_USER: chatuser
+      MYSQL_PASSWORD: chatpassword
+    ports:
+      - "3307:3306"  # Extern erreichbar über Port 3307
+    volumes:
+      - mysql_chat_data:/var/lib/mysql
+    networks:
+      - mynetwork
+
+  mysql-room-service:
+    image: mysql:8.0
+    container_name: mysql-room-db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: roomdb
+      MYSQL_USER: roomuser
+      MYSQL_PASSWORD: roompassword
+    ports:
+      - "3308:3306"  # Extern erreichbar über Port 3308
+    volumes:
+      - mysql_room_data:/var/lib/mysql
+    networks:
+      - mynetwork
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin
+    environment:
+      PMA_HOST: mysql-chat-db  # Verweist auf den Container-Namen
+      PMA_PORT: 3306  # MySQL läuft innerhalb des Containers auf Port 3306
+    ports:
+      - "8081:80"
+    networks:
+      - mynetwork
+
+  phpmyadmin2:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin2
+    environment:
+      PMA_HOST: mysql-room-db  # Verweist auf den Container-Namen
+      PMA_PORT: 3306  # MySQL läuft innerhalb des Containers auf Port 3306
+    ports:
+      - "8082:80"
+    networks:
+      - mynetwork
+
+volumes:
+  mysql_chat_data:
+  mysql_room_data:
+
+networks:
+  mynetwork:
