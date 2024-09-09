@@ -1,20 +1,16 @@
 using System.ComponentModel.DataAnnotations;
 
-public class User
+public class RegisterDto
 {
-    [Key]
-    public int Id { get; set; }
+    [Required]
+    public string Username { get; set; }
 
     [Required]
-    [StringLength(255)]
-    public string Username { get; set; }
-    
-    [Required]
-    [StringLength(255)]
     public string Email { get; set; }
-    
+
     [Required]
-    [StringLength(255)]
     public string Password { get; set; }
 
+    [Required]
+    public string PasswordRepeat { get; set; }
 }
