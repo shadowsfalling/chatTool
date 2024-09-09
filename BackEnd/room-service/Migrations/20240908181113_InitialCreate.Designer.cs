@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace room_service.Migrations
 {
     [DbContext(typeof(RoomDbContext))]
-    [Migration("20240908164000_InitialCreate")]
+    [Migration("20240908181113_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
