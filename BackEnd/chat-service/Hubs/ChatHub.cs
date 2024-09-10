@@ -8,12 +8,10 @@ namespace ChatService.Hubs
         // Methode für das Senden von Nachrichten an alle Clients
         public async Task SendMessage(string user, string message)
         {
-
             Console.WriteLine("user " + user + "  -  " + "message " + message);
 
             try
             {
-
                 // todo: hier mit rabbitMQ dem roomService Bescheid geben, dass es eine neue Nachricht in einem Chat gibt!
                 // dann aus dem RoomService an den NotificationService?! eine Nachricht an die User in dem Raum, dass es eine neue Nachricht in dem Raum gibt
 
@@ -28,30 +26,73 @@ namespace ChatService.Hubs
             }
         }
 
-        // Hinzufügen des Benutzers zur Gruppe beim Beitritt zu einem Raum
+        // Dictionary zum Speichern, welcher Benutzer in welchem Raum ist
+        private static Dictionary<string, string> userRooms = new Dictionary<string, string>();
+        // todo: das Dictionary mit Daten aus der DB füllen, welcher User in welchem Raum ist und dann entsprechend informieren
+
+
+
+        // Methode zum Beitritt zu einem Raum
         public async Task JoinRoom(string roomName)
         {
+            string connectionId = Context.ConnectionId;
 
-            Console.WriteLine("join room " + roomName);
+            // Benutzer zum Raum hinzufügen
+            // todo: ist der User berechtigt?
+            if (userRooms.ContainsKey(connectionId))
+            {
+                userRooms[connectionId] = roomName;
+            }
+            else
+            {
+                userRooms.Add(connectionId, roomName);
+            }
 
-            await Groups.AddToGroupAsync(Context.ConnectionId, roomName);
-            await Clients.Group(roomName).SendAsync("ReceiveMessage", $"{Context.ConnectionId} has joined the room {roomName}");
+            await Groups.AddToGroupAsync(connectionId, roomName);
+            Console.WriteLine($"{connectionId} ist Raum {roomName} beigetreten.");
         }
 
-        // Entfernen des Benutzers aus der Gruppe beim Verlassen
+        // Methode zum Verlassen eines Raums
         public async Task LeaveRoom(string roomName)
         {
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomName);
-            await Clients.Group(roomName).SendAsync("ReceiveMessage", $"{Context.ConnectionId} has left the room {roomName}");
+            string connectionId = Context.ConnectionId;
+
+            if (userRooms.ContainsKey(connectionId) && userRooms[connectionId] == roomName)
+            {
+                userRooms.Remove(connectionId);
+            }
+
+            await Groups.RemoveFromGroupAsync(connectionId, roomName);
+            Console.WriteLine($"{connectionId} hat Raum {roomName} verlassen.");
         }
 
-        // Nachricht nur an die Gruppe senden
+        // Methode zum Versenden einer Nachricht
         public async Task SendMessageToRoom(string roomName, string user, string message)
         {
-            Console.WriteLine("roomname " + roomName + "  -  user " + user + "  -  " + "message " + message);
-
+            // Nachricht an den Raum senden
+            // todo: ist der User berechtigt?
             await Clients.Group(roomName).SendAsync("ReceiveMessage", user, message);
-            // await Clients.All.SendAsync("ReceiveMessage", user, message); // sends really to all clients
+
+            // Benachrichtige Benutzer, die nicht im Raum sind
+            var usersNotInRoom = userRooms.Where(u => u.Value != roomName).Select(u => u.Key);
+
+            foreach (var unir in usersNotInRoom)
+            {
+                await Clients.Client(unir).SendAsync("ReceiveNotification", $"Neue Nachricht im Raum {roomName} von {user}: {message}");
+            }
+        }
+
+        public override Task OnDisconnectedAsync(Exception exception)
+        {
+            // Entferne den Benutzer aus dem Tracking, wenn er die Verbindung trennt
+            string connectionId = Context.ConnectionId;
+
+            if (userRooms.ContainsKey(connectionId))
+            {
+                userRooms.Remove(connectionId);
+            }
+
+            return base.OnDisconnectedAsync(exception);
         }
     }
 }
