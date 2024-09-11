@@ -1,0 +1,5 @@
+next steps:
+- dockerisieren => einfach starten und direkt los chatten
+- chats speichern und laden
+- Raumverfügbarkeit prüfen => darf der User den Raum sehen?
+- RabbitMQ => Notifications senden an User die nicht im Raum aktiv sind, aber dort angemeledet sind => DB erweitern!

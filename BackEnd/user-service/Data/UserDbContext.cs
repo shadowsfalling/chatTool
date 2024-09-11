@@ -2,7 +2,10 @@ using Microsoft.EntityFrameworkCore;
 
 public class UserDbContext : DbContext
 {
-    public UserDbContext(DbContextOptions<UserDbContext> options) : base(options) {}
+    public UserDbContext(DbContextOptions<UserDbContext> options) : base(options)
+    {
+        Database.Migrate();
+    }
 
     public DbSet<User> Users { get; set; }
 

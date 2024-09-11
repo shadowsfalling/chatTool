@@ -126,3 +126,9 @@ app.UseEndpoints(endpoints =>
 app.MapControllers();
 
 app.Run();
+
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
+    dbContext.Database.Migrate();
+}

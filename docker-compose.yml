@@ -9,7 +9,7 @@ services:
       MYSQL_USER: chatuser
       MYSQL_PASSWORD: chatpassword
     ports:
-      - "3307:3306"  # Extern erreichbar über Port 3307
+      - "3307:3306"
     volumes:
       - mysql_chat_data:/var/lib/mysql
     networks:
@@ -24,12 +24,11 @@ services:
       MYSQL_USER: roomuser
       MYSQL_PASSWORD: roompassword
     ports:
-      - "3308:3306"  # Extern erreichbar über Port 3308
+      - "3308:3306"
     volumes:
       - mysql_room_data:/var/lib/mysql
     networks:
       - mynetwork
-
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     container_name: phpmyadmin
@@ -52,17 +51,74 @@ services:
     networks:
       - mynetwork
 
+
   rabbitmq:
     image: rabbitmq:management
     container_name: rabbitmq
     ports:
-      - "5672:5672"  # RabbitMQ
-      - "15672:15672"  # RabbitMQ Management UI
+      - "5672:5672"
+      - "15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
     networks:
       - mynetwork
+
+  user-service:
+    build:
+      context: ./BackEnd/user-service
+    container_name: user-service
+    depends_on:
+      - rabbitmq
+      - mysql-chat-service
+    ports:
+      - "5175:80"
+    networks:
+      - mynetwork
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__MySqlConnection=server=mysql-chat-db;port=3306;database=chatdb;user=chatuser;password=chatpassword
+
+  chat-service:
+    build:
+      context: ./BackEnd/chat-service
+    container_name: chat-service
+    depends_on:
+      - rabbitmq
+      - mysql-chat-service
+    ports:
+      - "5176:80"
+    networks:
+      - mynetwork
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__MySqlConnection=server=mysql-chat-db;port=3306;database=chatdb;user=chatuser;password=chatpassword
+
+  room-service:
+    build:
+      context: ./BackEnd/room-service
+    container_name: room-service
+    depends_on:
+      - rabbitmq
+      - mysql-room-service
+    ports:
+      - "5177:80"
+    networks:
+      - mynetwork
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__MySqlConnection=server=mysql-room-db;port=3306;database=roomdb;user=roomuser;password=roompassword
+      - RabbitMQ__Host=rabbitmq
+
+  frontend:
+    build:
+      context: ./FrontEnd
+    container_name: frontend
+    ports:
+      - "8080:80"
+    networks:
+      - mynetwork
+
 
 volumes:
   mysql_chat_data:

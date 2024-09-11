@@ -95,7 +95,6 @@ builder.Services.AddLogging(config =>
     config.AddDebug();
 });
 
-
 var app = builder.Build();
 
 // Swagger aktivieren
@@ -117,3 +116,10 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+using (var scope = app.Services.CreateScope())
+{
+    Console.WriteLine("update database");
+    var dbContext = scope.ServiceProvider.GetRequiredService<UserDbContext>();
+    dbContext.Database.Migrate();
+}
