@@ -72,12 +72,13 @@ services:
       - rabbitmq
       - mysql-chat-service
     ports:
-      - "5175:80"
+      - "5175:8080"
     networks:
       - mynetwork
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__MySqlConnection=server=mysql-chat-db;port=3306;database=chatdb;user=chatuser;password=chatpassword
+       - ConnectionStrings__DefaultConnection=Server=mysql-chat-db;Port=3306;Database=chatdb;User=chatuser;Password=chatpassword
+    restart: always
 
   chat-service:
     build:
@@ -87,12 +88,13 @@ services:
       - rabbitmq
       - mysql-chat-service
     ports:
-      - "5176:80"
+      - "5176:8080"
     networks:
       - mynetwork
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__MySqlConnection=server=mysql-chat-db;port=3306;database=chatdb;user=chatuser;password=chatpassword
+       - ConnectionStrings__DefaultConnection=Server=mysql-chat-db;Port=3306;Database=chatdb;User=chatuser;Password=chatpassword
+    restart: always
 
   room-service:
     build:
@@ -102,14 +104,15 @@ services:
       - rabbitmq
       - mysql-room-service
     ports:
-      - "5177:80"
+      - "5177:8080"
     networks:
       - mynetwork
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__MySqlConnection=server=mysql-room-db;port=3306;database=roomdb;user=roomuser;password=roompassword
-      - RabbitMQ__Host=rabbitmq
-
+      - ConnectionStrings__DefaultConnection=Server=mysql-chat-db;Port=3306;Database=chatdb;User=chatuser;Password=chatpassword
+      - RabbitMQ__Host=rabbitmq 
+    restart: always
+      
   frontend:
     build:
       context: ./FrontEnd
@@ -125,4 +128,5 @@ volumes:
   mysql_room_data:
 
 networks:
-  mynetwork:
+  mynetwork: 
+   driver: bridge
