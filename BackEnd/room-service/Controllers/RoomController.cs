@@ -58,5 +58,14 @@ namespace RoomService.Controllers
 
             return Ok(room);
         }
+
+        // GET: api/room/all
+        [HttpGet("all")]
+        public async Task<IActionResult> GetRooms()
+        {
+            // todo: ausprogrammieren
+            var rooms = await _context.Rooms.ToListAsync();
+            return Ok(rooms);
+        }
     }
 }
