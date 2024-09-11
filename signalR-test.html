@@ -2,7 +2,7 @@
 <script>
     // Verbindung zu SignalR-Server herstellen
     const connection = new signalR.HubConnectionBuilder()
-        .withUrl("http://localhost:5271/chatHub") // Ersetze durch die richtige URL deines Servers
+        .withUrl("http://localhost:5176/chatHub") // Ersetze durch die richtige URL deines Servers
         .build();
 
     connection.start().then(function () {

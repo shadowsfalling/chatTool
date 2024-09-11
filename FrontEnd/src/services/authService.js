@@ -1,12 +1,22 @@
 import axios from 'axios';
 import router from '../router';
 
-const API_URL = 'http://localhost:5176/api/Auth';  // Replace with your API endpoint
+const API_URL = 'http://localhost:5175/api/Auth';  // Replace with your API endpoint
 
 export const AuthService = {
   login(username, password) {
     return axios
       .post(`${API_URL}/login`, { username, password })
+      .then(response => {
+        if (response.data.token) {
+          localStorage.setItem('user', JSON.stringify(response.data));
+        }
+        return response.data;
+      });
+  },
+  register(username, email, password, passwordRepeat) {
+    return axios
+      .post(`${API_URL}/register`, { username, email, password, passwordRepeat })
       .then(response => {
         if (response.data.token) {
           localStorage.setItem('user', JSON.stringify(response.data));

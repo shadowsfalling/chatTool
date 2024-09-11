@@ -4,7 +4,7 @@ let connection;
 
 export async function startSignalRConnection() {
     connection = new signalR.HubConnectionBuilder()
-        .withUrl("http://localhost:5271/chatHub") // Ersetze durch die URL deines SignalR-Hubs
+        .withUrl("http://localhost:5176/chatHub") // Ersetze durch die URL deines SignalR-Hubs
         .withAutomaticReconnect()
         .configureLogging(signalR.LogLevel.Information)
         .build();

@@ -1,7 +1,7 @@
 describe('API Test for Creating a Room', () => {
     it('should create a room successfully', () => {
         // Führe eine POST-Anfrage durch, um einen Raum zu erstellen
-        cy.request('POST', 'http://localhost:5081/api/room', {
+        cy.request('POST', 'http://localhost:5177/api/room', {
             name: 'Test Room'
         }).then((response) => {
             // Überprüfe, ob die Antwort erfolgreich war
