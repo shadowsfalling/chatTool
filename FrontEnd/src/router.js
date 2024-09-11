@@ -9,7 +9,7 @@ const routes = [
   { path: '/', component: Home, meta: { requiresAuth: true } },
   { path: '/login', component: Login },
   { path: '/rooms', component: Room, meta: { requiresAuth: true } },
-  { path: '/chat', component: Chat, meta: { requiresAuth: true } },
+  { path: '/room/:roomId', component: Chat, meta: { requiresAuth: true } },
 ];
 
 const router = createRouter({

@@ -2,14 +2,14 @@ import * as signalR from "@microsoft/signalr";
 
 let connection;
 
-export function startSignalRConnection() {
+export async function startSignalRConnection() {
     connection = new signalR.HubConnectionBuilder()
         .withUrl("http://localhost:5271/chatHub") // Ersetze durch die URL deines SignalR-Hubs
         .withAutomaticReconnect()
         .configureLogging(signalR.LogLevel.Information)
         .build();
 
-    connection
+    await connection
         .start()
         .then(() => console.log("SignalR connected."))
         .catch(err => console.error("SignalR connection error: ", err));

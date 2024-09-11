@@ -43,11 +43,11 @@
           <v-list-item-title v-text="'Logout'"></v-list-item-title>
         </v-list-item>
       </v-list>
-
     </v-navigation-drawer>
 
     <v-main>
-      <router-view />
+      <router-view v-if="!loading" />
+      <div v-else>Loading...</div>
     </v-main>
 
     <v-footer app color="primary" dark>
@@ -57,15 +57,30 @@
 </template>
 
 <script>
-
+import { onMounted, ref } from 'vue';
 import router from './router';
+import { useAuthStore } from './stores/authStore';
 import { AuthService } from './services/authService';
 
 export default {
-  computed: {
-    isAuthenticated() {
-      return AuthService.isAuthenticated();
-    }
+  setup() {
+    const authStore = useAuthStore();
+    const isAuthenticated = ref(false);
+    const user = ref(null);
+    const loading = ref(true);
+
+    onMounted(async () => {
+      await authStore.checkAuth();
+      isAuthenticated.value = authStore.isAuthenticated;
+      user.value = authStore.user;
+      loading.value = false; 
+    });
+
+    return {
+      isAuthenticated,
+      user,
+      loading
+    };
   },
   methods: {
     logout() {
