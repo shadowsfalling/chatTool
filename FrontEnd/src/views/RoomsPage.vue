@@ -1,53 +1,74 @@
 <template>
-  <div>
-    <h3>Available Rooms</h3>
+  <v-container>
+    <h3>Liste der Räume</h3>
 
-    <div v-if="error" class="error-message">
-      {{ error }}
-    </div>
+    <v-list>
 
-    <v-list dense>
-      <v-list-subheader>Rooms</v-list-subheader>
-
-      <v-list-item v-for="room in rooms" :to="'/room/' + room.id" :key="room.id">{{ room.name }}
-
+      <v-list-item v-for="room in rooms" :key="room.id">{{ room.name }}
+        <v-list-item-action>
+          <v-btn color="primary" @click="joinRoom(room.id)">Join Room</v-btn>
+          <v-btn :to="'/room/' + room.id">Enter Room</v-btn>
+        </v-list-item-action>
       </v-list-item>
     </v-list>
 
-  </div>
+    <v-alert v-if="successMessage" type="success">
+      {{ successMessage }}
+    </v-alert>
+
+    <v-alert v-if="errorMessage" type="error">
+      {{ errorMessage }}
+    </v-alert>
+  </v-container>
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
-import { RoomService } from '@/services/roomService';
+import axios from 'axios';
+import { useAuthStore } from '@/stores/authStore'; // Deinen Pinia-Store importieren
 
 export default {
   setup() {
-    const rooms = ref([]);
-    const error = ref(null);
+    const authStore = useAuthStore();  // Zugriff auf den AuthStore
 
-    onMounted(() => {
-      RoomService.getAccessibleRooms()
-        .then(response => {
-          rooms.value = response;
-        })
-        .catch(err => {
-          error.value = err.response?.data?.message || 'Fehler beim Abrufen der Räume';
-        });
-    });
-
+    return { authStore }; // Rückgabe des Stores für die Nutzung in der Komponente
+  },
+  data() {
     return {
-      rooms,
-      error
+      rooms: [],
+      successMessage: '',
+      errorMessage: '',
     };
-  }
+  },
+  async created() {
+    // Räume vom Backend abrufen
+    try {
+      const response = await axios.get('http://localhost:5177/api/Room/all');
+      this.rooms = response.data;
+    } catch (error) {
+      console.error('Fehler beim Abrufen der Räume:', error);
+    }
+  },
+  methods: {
+    async joinRoom(roomId) {
+      try {
+        const userId = this.authStore.user.id;  // Benutzer-ID aus dem Store abrufen
+        await axios.post(`http://localhost:5177/api/Room/${roomId}/add-user`, {
+          userId: userId
+        });
+        this.successMessage = `Du bist dem Raum beigetreten!`;
+      } catch (error) {
+        this.errorMessage = 'Fehler beim Beitreten des Raumes.';
+        console.error(error);
+      }
+    },
+  },
 };
 </script>
 
 <style scoped>
-.error-message {
-  color: red;
-  font-weight: bold;
-  margin-bottom: 20px;
+.v-container {
+  max-width: 600px;
+  margin: auto;
+  padding-top: 20px;
 }
 </style>

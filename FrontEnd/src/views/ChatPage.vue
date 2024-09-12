@@ -34,7 +34,6 @@ export default {
   setup() {
     const messages = ref([]);
     const newMessage = ref("");
-    const selectedRoom = ref("room1");
     const currentRoom = ref("");
     const authStore = useAuthStore();
     const route = useRoute();
@@ -69,7 +68,6 @@ export default {
           .catch(err => console.error(err));
       }
 
-      currentRoom.value = selectedRoom.value;
       connection.invoke("JoinRoom", currentRoom.value)
         .catch(err => console.error(err));
     };
@@ -77,7 +75,6 @@ export default {
     return {
       messages,
       newMessage,
-      selectedRoom,
       currentRoom,
       sendChatMessage,
       joinRoom,

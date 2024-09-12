@@ -5,12 +5,14 @@ import Chat from '@/views/ChatPage.vue';
 import Register from '@/views/RegisterPage.vue';
 import Room from '@/views/RoomsPage.vue';
 import { AuthService } from '@/services/authService';
+import RoomAddPage from './views/RoomAddPage.vue';
 
 const routes = [
   { path: '/', component: Home, meta: { requiresAuth: true } },
   { path: '/login', component: Login },
   { path: '/register', component: Register },
   { path: '/rooms', component: Room, meta: { requiresAuth: true } },
+  { path: '/room/add', component: RoomAddPage, meta: { requiresAuth: true } },
   { path: '/room/:roomId', component: Chat, meta: { requiresAuth: true } },
 ];
 
