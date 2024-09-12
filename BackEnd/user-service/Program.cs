@@ -97,6 +97,13 @@ builder.Services.AddLogging(config =>
 
 var app = builder.Build();
 
+// Erstelle ein Service-Scope und rufe UserService auf
+using (var scope = app.Services.CreateScope())
+{
+    var userService = scope.ServiceProvider.GetRequiredService<UserService.Services.UserService>();
+    userService.StartListening();  // Verwende UserService innerhalb des Scopes
+}
+
 // Swagger aktivieren
 if (app.Environment.IsDevelopment())
 {

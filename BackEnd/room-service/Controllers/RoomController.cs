@@ -10,10 +10,12 @@ namespace RoomService.Controllers
     public class RoomController : ControllerBase
     {
         private readonly RoomDbContext _context;
+        private readonly Services.RoomService _roomService;
 
-        public RoomController(RoomDbContext context)
+        public RoomController(RoomDbContext context, Services.RoomService roomService)
         {
             _context = context;
+            _roomService = roomService;
         }
 
         // POST: api/room
@@ -66,6 +68,19 @@ namespace RoomService.Controllers
             // todo: ausprogrammieren
             var rooms = await _context.Rooms.ToListAsync();
             return Ok(rooms);
+        }
+
+        // post api/room/{id}/add-user
+        [HttpPost("{roomId}/add-user")]
+        public async Task<IActionResult> AddUserToRoom(int roomId, [FromBody] AddUserToRoomDto addUserDto)
+        {
+            var result = await _roomService.AddUserToRoom(roomId, addUserDto.UserId);
+            if (!result)
+            {
+                return NotFound("Benutzer konnte nicht validiert werden oder Raum wurde nicht gefunden.");
+            }
+
+            return Ok("Benutzer wurde dem Raum hinzugefügt.");
         }
     }
 }

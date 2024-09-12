@@ -10,7 +10,7 @@ builder.Services.AddDbContext<RoomDbContext>(options =>
     options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"),
     new MySqlServerVersion(new Version(8, 0, 21))));
 
-builder.Services.AddSingleton<RoomService.Services.RoomService>();
+builder.Services.AddScoped<RoomService.Services.RoomService>();
 
 builder.Services.AddAuthentication(options =>
 {
@@ -19,7 +19,7 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
-    var key = Encoding.UTF8.GetBytes(builder.Configuration.GetSection("Jwt")["Key"]);
+    var key = Encoding.UTF8.GetBytes(builder.Configuration.GetSection("Jwt")["Key"]!);
     options.Events = new JwtBearerEvents
     {
         OnAuthenticationFailed = context =>
@@ -109,7 +109,7 @@ builder.Services.AddLogging(config =>
 
 var app = builder.Build();
 
-var roomService = app.Services.GetRequiredService<RoomService.Services.RoomService>();
+var roomService = app.Services.CreateScope().ServiceProvider.GetRequiredService<RoomService.Services.RoomService>();
 roomService.StartListening();
 
 // Swagger aktivieren
