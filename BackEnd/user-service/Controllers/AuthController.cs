@@ -15,7 +15,8 @@ namespace UserService.Controllers
         private readonly Services.UserService _userService;
         private readonly UserRepository _userRepository;
 
-        public AuthController(Services.UserService userService, AuthService authService, UserRepository userRepository) {
+        public AuthController(Services.UserService userService, AuthService authService, UserRepository userRepository)
+        {
             _userService = userService;
             _authService = authService;
             _userRepository = userRepository;
@@ -35,14 +36,17 @@ namespace UserService.Controllers
             return Ok(new { token });
         }
 
-        [HttpPost("register")] 
-        public async Task<IActionResult> Register([FromBody] RegisterDto registerDto) {
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] RegisterDto registerDto)
+        {
 
-            if(!ModelState.IsValid) {
+            if (!ModelState.IsValid)
+            {
                 return BadRequest();
             }
 
-            var user = new User() {
+            var user = new User()
+            {
                 Email = registerDto.Email,
                 Password = Services.UserService.HashPassword(registerDto.Password),
                 Username = registerDto.Username
@@ -72,7 +76,7 @@ namespace UserService.Controllers
                 return NotFound("User not found");
             }
 
-            return Ok(new 
+            return Ok(new
             {
                 Id = user.Id,
                 Username = user.Username,

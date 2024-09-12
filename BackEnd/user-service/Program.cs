@@ -81,8 +81,16 @@ builder.Services.AddSwaggerGen(c =>
 
 // Register UserService and AuthService
 builder.Services.AddScoped<AuthService>();
-builder.Services.AddScoped<UserService.Services.UserService>();
+builder.Services.AddScoped<ValidateUserHandler>();
+builder.Services.AddScoped<CreateUserHandler>();
+
+builder.Services.AddScoped<IMessageHandler<bool>, ValidateUserHandler>();
+builder.Services.AddScoped<IMessageHandler<User>, CreateUserHandler>();
+builder.Services.AddScoped(typeof(MessageDispatcher<>));
+
 builder.Services.AddScoped<UserRepository>();
+builder.Services.AddScoped<UserService.Services.UserService>();
+builder.Services.AddSingleton<IServiceScopeFactory>(sp => sp.GetRequiredService<IServiceScopeFactory>());
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

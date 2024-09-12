@@ -3,60 +3,23 @@ using RabbitMQ.Client.Events;
 using Newtonsoft.Json;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
 
 namespace RoomService.Services
 {
-
     public class RoomService
     {
         private readonly IConnection _connection;
         private readonly IModel _channel;
-        private readonly IConfiguration _configuration;
         private readonly RoomDbContext _context;
 
-        public RoomService(IConfiguration configuration, RoomDbContext roomDbContext)
+        public RoomService(IConnection connection, RoomDbContext roomDbContext)
         {
+            _connection = connection;
             _context = roomDbContext;
-            _configuration = configuration;
-            var rabbitMQHost = _configuration["RabbitMQ:Host"];
-            var rabbitMQPort = int.Parse(_configuration["RabbitMQ:Port"]!);
-            var rabbitMQUsername = _configuration["RabbitMQ:Username"];
-            var rabbitMQPassword = _configuration["RabbitMQ:Password"];
 
-            var factory = new ConnectionFactory()
-            {
-                HostName = rabbitMQHost,
-                Port = rabbitMQPort,
-                UserName = rabbitMQUsername,
-                Password = rabbitMQPassword
-            };
-
-            _connection = factory.CreateConnection();
+            // Stelle sicher, dass die Queue existiert
             _channel = _connection.CreateModel();
             _channel.QueueDeclare(queue: "RoomServiceQueue", durable: false, exclusive: false, autoDelete: false, arguments: null);
-        }
-
-        public void StartListening()
-        {
-            var consumer = new EventingBasicConsumer(_channel);
-            consumer.Received += (model, ea) =>
-            {
-                var body = ea.Body.ToArray();
-                var message = Encoding.UTF8.GetString(body);
-                Console.WriteLine(" [x] Received {0}", message);
-
-                // Handle the message and notify all users in the room if needed
-            };
-
-            _channel.BasicConsume(queue: "RoomServiceQueue", autoAck: true, consumer: consumer);
-            Console.WriteLine(" [*] Waiting for messages.");
-        }
-
-        public void Dispose()
-        {
-            _channel.Close();
-            _connection.Close();
         }
 
         public async Task<bool> AddUserToRoom(int roomId, int userId)
@@ -67,13 +30,14 @@ namespace RoomService.Services
                 return false; // Raum nicht gefunden
             }
 
-            // Benutzervalidierung über RabbitMQ anfordern
-            bool isValidUser = await ValidateUserAsync(userId);
+            // Sende Benutzervalidierung an den UserService
+            bool isValidUser = await SendUserValidationMessage(userId);
             if (!isValidUser)
             {
-                return false; // Benutzer ist ungültig
+                return false; // Benutzer ungültig
             }
 
+            // Benutzer zum Raum hinzufügen
             var roomUser = new RoomUser
             {
                 RoomId = roomId,
@@ -86,19 +50,48 @@ namespace RoomService.Services
             return true; // Erfolgreich hinzugefügt
         }
 
-        private async Task<bool> ValidateUserAsync(int userId)
+        public void StartListening()
+        {
+            var consumer = new EventingBasicConsumer(_channel);
+            consumer.Received += (model, ea) =>
+            {
+                var body = ea.Body.ToArray();
+                var message = Encoding.UTF8.GetString(body);
+                Console.WriteLine($"[x] Received: {message}");
+            };
+
+            _channel.BasicConsume(queue: "RoomServiceQueue", autoAck: true, consumer: consumer);
+            Console.WriteLine("RoomService is listening for messages...");
+        }
+
+        public void Dispose()
+        {
+            _channel.Close();
+            _connection.Close();
+        }
+
+        private async Task<bool> SendUserValidationMessage(int userId)
         {
             var tcs = new TaskCompletionSource<bool>();
 
-            // Nachricht an den User-Service senden
-            var correlationId = Guid.NewGuid().ToString();
-            var replyQueueName = _channel.QueueDeclare().QueueName;
-            var consumer = new EventingBasicConsumer(_channel);
+            var message = new UserValidationMessage
+            {
+                Action = "ValidateUser",
+                Payload = JsonConvert.SerializeObject(new { UserId = userId }) 
+            };
 
-            // Antwort-Handler
+            var messageBytes = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(message));
+
+            var props = _channel.CreateBasicProperties();
+            props.CorrelationId = Guid.NewGuid().ToString();
+            props.ReplyTo = _channel.QueueDeclare().QueueName;
+
+            _channel.BasicPublish(exchange: "", routingKey: "userQueue", basicProperties: props, body: messageBytes);
+
+            var consumer = new EventingBasicConsumer(_channel);
             consumer.Received += (model, ea) =>
             {
-                if (ea.BasicProperties.CorrelationId == correlationId)
+                if (ea.BasicProperties.CorrelationId == props.CorrelationId)
                 {
                     var response = Encoding.UTF8.GetString(ea.Body.ToArray());
                     var isValid = bool.Parse(response);
@@ -106,16 +99,8 @@ namespace RoomService.Services
                 }
             };
 
-            _channel.BasicConsume(queue: replyQueueName, autoAck: true, consumer: consumer);
-
-            var message = new { UserId = userId };
-            var messageBytes = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(message));
-
-            var props = _channel.CreateBasicProperties();
-            props.CorrelationId = correlationId;
-            props.ReplyTo = replyQueueName;
-
-            _channel.BasicPublish(exchange: "", routingKey: "userValidationQueue", basicProperties: props, body: messageBytes);
+            _channel.BasicConsume(queue: props.ReplyTo, autoAck: true, consumer: consumer);
+            Console.WriteLine("Send message");
 
             return await tcs.Task;
         }

@@ -1,30 +1,29 @@
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using System.Security.Cryptography;
 using Newtonsoft.Json;
+using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace UserService.Services
 {
     public class UserService
     {
-        private readonly UserDbContext _userDbContext;
-        private readonly IModel _channel;
         private readonly IConnection _connection;
-         private readonly IServiceScopeFactory _scopeFactory;
+        private readonly IModel _channel;
+        private readonly IServiceScopeFactory _scopeFactory;
+        private readonly UserDbContext _userDbContext;
 
         public UserService(IConfiguration configuration, UserDbContext context, IServiceScopeFactory scopeFactory)
         {
             _userDbContext = context;
             _scopeFactory = scopeFactory;
 
-            // Hole RabbitMQ-Konfigurationswerte aus der appsettings.json
             var rabbitMQHost = configuration["RabbitMQ:Host"];
             var rabbitMQPort = int.Parse(configuration["RabbitMQ:Port"]);
             var rabbitMQUsername = configuration["RabbitMQ:Username"];
             var rabbitMQPassword = configuration["RabbitMQ:Password"];
 
-            // Erstelle die RabbitMQ-Verbindung
             var factory = new ConnectionFactory()
             {
                 HostName = rabbitMQHost,
@@ -35,38 +34,60 @@ namespace UserService.Services
 
             _connection = factory.CreateConnection();
             _channel = _connection.CreateModel();
-            _channel.QueueDeclare(queue: "userValidationQueue", durable: false, exclusive: false, autoDelete: false, arguments: null);
+            _channel.QueueDeclare(queue: "userQueue", durable: false, exclusive: false, autoDelete: false, arguments: null);
         }
 
-        // StartListening Methode für den RabbitMQ-Consumer
-       public void StartListening()
+        public void StartListening()
         {
             var consumer = new EventingBasicConsumer(_channel);
             consumer.Received += async (model, ea) =>
             {
                 using (var scope = _scopeFactory.CreateScope())
                 {
-                    var userDbContext = scope.ServiceProvider.GetRequiredService<UserDbContext>();
+                    try
+                    {
+                        var body = ea.Body.ToArray();
+                        var message = Encoding.UTF8.GetString(body);
 
-                    var body = ea.Body.ToArray();
-                    var message = Encoding.UTF8.GetString(body);
-                    var validationRequest = JsonConvert.DeserializeObject<UserValidationMessage>(message);
+                        BaseMessage baseMessage = JsonConvert.DeserializeObject<BaseMessage>(message);
 
-                    // Benutzer validieren
-                    var user = await userDbContext.Users.FindAsync(validationRequest.UserId);
-                    bool isValid = user != null;
+                        // Dispatcher für bool
+                        if (baseMessage.Action == "ValidateUser")
+                        {
+                            var dispatcher = scope.ServiceProvider.GetRequiredService<MessageDispatcher<bool>>();
+                            bool isValid = await dispatcher.DispatchAsync(baseMessage);
 
-                    var responseBytes = Encoding.UTF8.GetBytes(isValid.ToString());
-                    var replyProps = _channel.CreateBasicProperties();
-                    replyProps.CorrelationId = ea.BasicProperties.CorrelationId;
+                            var response = Encoding.UTF8.GetBytes(isValid.ToString());
+                            SendResponse(ea, response);
+                        }
+                        // Dispatcher für User
+                        else if (baseMessage.Action == "CreateUser")
+                        {
+                            var dispatcher = scope.ServiceProvider.GetRequiredService<MessageDispatcher<User>>();
+                            var createdUser = await dispatcher.DispatchAsync(baseMessage);
 
-                    _channel.BasicPublish(exchange: "", routingKey: ea.BasicProperties.ReplyTo, basicProperties: replyProps, body: responseBytes);
+                            var response = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(createdUser));
+                            SendResponse(ea, response);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error processing message: {ex.Message}");
+                    }
                 }
             };
 
-            _channel.BasicConsume(queue: "userValidationQueue", autoAck: true, consumer: consumer);
-            Console.WriteLine("UserService is listening for validation requests...");
+            _channel.BasicConsume(queue: "userQueue", autoAck: true, consumer: consumer);
+            Console.WriteLine("UserService is listening for messages...");
         }
+
+        private void SendResponse(BasicDeliverEventArgs ea, byte[] response)
+        {
+            var props = _channel.CreateBasicProperties();
+            props.CorrelationId = ea.BasicProperties.CorrelationId;
+            _channel.BasicPublish(exchange: "", routingKey: ea.BasicProperties.ReplyTo, basicProperties: props, body: response);
+        }
+
 
         public void Dispose()
         {
@@ -77,6 +98,11 @@ namespace UserService.Services
         // Benutzer-Authentifizierungsmethode
         public User Authenticate(string username, string password)
         {
+            if (_userDbContext == null)
+            {
+                throw new InvalidOperationException("Database context is not initialized.");
+            }
+
             var user = _userDbContext.Users.SingleOrDefault(u => u.Username == username);
             if (user == null || user.Password != HashPassword(password))
             {

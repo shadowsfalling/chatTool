@@ -1,17 +1,37 @@
+using RabbitMQ.Client;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using RoomService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Register DbContext
 builder.Services.AddDbContext<RoomDbContext>(options =>
     options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"),
     new MySqlServerVersion(new Version(8, 0, 21))));
 
+// Register RabbitMQ connection as a singleton
+builder.Services.AddSingleton<IConnection>(sp =>
+{
+    var configuration = sp.GetRequiredService<IConfiguration>();
+    var factory = new ConnectionFactory
+    {
+        HostName = configuration["RabbitMQ:Host"],
+        Port = int.Parse(configuration["RabbitMQ:Port"]),
+        UserName = configuration["RabbitMQ:Username"],
+        Password = configuration["RabbitMQ:Password"]
+    };
+
+    return factory.CreateConnection();
+});
+
+// Register RoomService
 builder.Services.AddScoped<RoomService.Services.RoomService>();
 
+// JWT authentication configuration
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -19,8 +39,8 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
-    var key = Encoding.UTF8.GetBytes(builder.Configuration.GetSection("Jwt")["Key"]!);
-    options.Events = new JwtBearerEvents
+    var key = Encoding.UTF8.GetBytes(builder.Configuration.GetSection("Jwt")["Key"]);
+        options.Events = new JwtBearerEvents
     {
         OnAuthenticationFailed = context =>
         {
@@ -52,10 +72,22 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// Swagger-Konfiguration hinzufügen
+// Add CORS policy
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowSpecificOrigins", builder =>
+    {
+        builder
+            .WithOrigins("http://localhost:8080") // Adjust this to your frontend URL
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials();
+    });
+});
+
+// Swagger configuration
 builder.Services.AddSwaggerGen(c =>
 {
-    // JWT Security Definition hinzufügen
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -66,7 +98,6 @@ builder.Services.AddSwaggerGen(c =>
         Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\""
     });
 
-    // Anforderung, das JWT-Token zu verwenden
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
@@ -99,20 +130,22 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-
 builder.Services.AddLogging(config =>
 {
     config.AddConsole();
     config.AddDebug();
 });
 
-
 var app = builder.Build();
 
-var roomService = app.Services.CreateScope().ServiceProvider.GetRequiredService<RoomService.Services.RoomService>();
-roomService.StartListening();
+// Start RabbitMQ listener
+using (var scope = app.Services.CreateScope())
+{
+    var roomService = scope.ServiceProvider.GetRequiredService<RoomService.Services.RoomService>();
+    roomService.StartListening();
+}
 
-// Swagger aktivieren
+// Enable Swagger in development mode
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -130,6 +163,7 @@ app.MapControllers();
 
 app.Run();
 
+// Migrate the database
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<RoomDbContext>();
