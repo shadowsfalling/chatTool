@@ -77,7 +77,11 @@ services:
       - mynetwork
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-       - ConnectionStrings__DefaultConnection=Server=mysql-chat-db;Port=3306;Database=chatdb;User=chatuser;Password=chatpassword
+      - ConnectionStrings__DefaultConnection=Server=mysql-chat-db;Port=3306;Database=chatdb;User=chatuser;Password=chatpassword
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__Username=guest
+      - RabbitMQ__Password=guest
     restart: always
 
   chat-service:
@@ -110,7 +114,10 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Server=mysql-chat-db;Port=3306;Database=chatdb;User=chatuser;Password=chatpassword
-      - RabbitMQ__Host=rabbitmq 
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__Username=guest
+      - RabbitMQ__Password=guest
     restart: always
       
   frontend:
