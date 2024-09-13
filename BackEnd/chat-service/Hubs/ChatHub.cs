@@ -1,10 +1,18 @@
 using Microsoft.AspNetCore.SignalR;
 using System.Threading.Tasks;
+using ChatService.Repositories;
 
 namespace ChatService.Hubs
 {
     public class ChatHub : Hub
     {
+
+        private readonly MessageRepository _messageRepository;
+
+        public ChatHub(MessageRepository messageRepository) {
+            _messageRepository = messageRepository;
+        }
+
         // Methode für das Senden von Nachrichten an alle Clients
         public async Task SendMessage(string user, string message)
         {
@@ -67,19 +75,30 @@ namespace ChatService.Hubs
         }
 
         // Methode zum Versenden einer Nachricht
-        public async Task SendMessageToRoom(string roomName, string user, string message)
+        public async Task SendMessageToRoom(string roomName, string user, string messageContent)
         {
             // Nachricht an den Raum senden
             // todo: ist der User berechtigt?
-            await Clients.Group(roomName).SendAsync("ReceiveMessage", user, message);
+            await Clients.Group(roomName).SendAsync("ReceiveMessage", user, messageContent);
 
-            // Benachrichtige Benutzer, die nicht im Raum sind
-            var usersNotInRoom = userRooms.Where(u => u.Value != roomName).Select(u => u.Key);
 
-            foreach (var unir in usersNotInRoom)
-            {
-                await Clients.Client(unir).SendAsync("ReceiveNotification", $"Neue Nachricht im Raum {roomName} von {user}: {message}");
-            }
+            // save message
+            var message = new Message() {
+                Content = messageContent,
+                RoomId = int.Parse(roomName),
+                UserId = user,
+                Timestamp = DateTime.Now
+            };
+            await _messageRepository.AddAsync(message);
+
+
+            // // Benachrichtige Benutzer, die nicht im Raum sind
+            // var usersNotInRoom = userRooms.Where(u => u.Value != roomName).Select(u => u.Key);
+
+            // foreach (var unir in usersNotInRoom)
+            // {
+            //     await Clients.Client(unir).SendAsync("ReceiveNotification", $"Neue Nachricht im Raum {roomName} von {user}: {message}");
+            // }
         }
 
         public override Task OnDisconnectedAsync(Exception exception)

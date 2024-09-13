@@ -114,18 +114,6 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowSpecificOrigins", builder =>
-    {
-        builder
-            .WithOrigins("http://localhost:8080")
-            .AllowAnyMethod()
-            .AllowAnyHeader()
-            .AllowCredentials(); // Für WebSockets notwendig
-    });
-});
-
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

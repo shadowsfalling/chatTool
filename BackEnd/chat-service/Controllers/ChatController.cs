@@ -1,10 +1,11 @@
-using ChatService.Hubs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using ChatService.Hubs;
+using ChatService.Repositories;
 
-namespace RoomService.Controllers
+namespace ChatService.Controllers
 {
     [ApiController]
     [Authorize]
@@ -13,10 +14,12 @@ namespace RoomService.Controllers
     {
 
         private readonly IHubContext<ChatHub> _hubContext;
+        private readonly MessageRepository _messageRepository;
 
-        public RoomController(IHubContext<ChatHub> hubContext)
+        public RoomController(IHubContext<ChatHub> hubContext, MessageRepository messageRepository)
         {
             _hubContext = hubContext;
+            _messageRepository = messageRepository;
         }
 
         // GET: api/chat/
@@ -36,6 +39,15 @@ namespace RoomService.Controllers
             await _hubContext.Clients.All.SendAsync("ReceiveMessage", "Server", message);
 
             return Ok(new { Message = "Notification sent!" });
+        }
+
+        // GET: api/chat/{roomId}/messages 
+        [HttpGet("/{roomId}/messages")]
+        public async Task<IActionResult> GetMessagesByRoomId(int roomId)
+        {
+            var messages = await _messageRepository.GetMessagesByRoomIdAsync(roomId);
+
+            return Ok(messages);
         }
     }
 }
