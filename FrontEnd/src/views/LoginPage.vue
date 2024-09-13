@@ -5,15 +5,24 @@
         <v-card>
           <v-card-title>Login</v-card-title>
           <v-card-text>
+            <!-- Updated form to listen for keydown.enter -->
             <v-form>
-              <v-text-field label="Username" v-model="username" />
-              <v-text-field label="Password" type="password" v-model="password" />
+              <v-text-field
+                label="Username"
+                v-model="username"
+                @keydown.enter="login" 
+              />
+              <v-text-field
+                label="Password"
+                type="password"
+                v-model="password"
+                @keydown.enter="login" 
+              />
+              <v-alert v-if="errorMessage" type="error">{{ errorMessage }}</v-alert>
+              <!-- Button to trigger login -->
+              <v-btn color="primary" @click="login">Login</v-btn>
             </v-form>
-            <v-alert v-if="errorMessage" type="error">{{ errorMessage }}</v-alert>
           </v-card-text>
-          <v-card-actions>
-            <v-btn color="primary" @click="login">Login</v-btn>
-          </v-card-actions>
         </v-card>
       </v-col>
     </v-row>

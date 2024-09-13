@@ -4,12 +4,26 @@
 
     <v-list>
 
-      <v-list-item v-for="room in rooms" :key="room.id">{{ room.name }}
-        <v-list-item-action>
-          <v-btn color="primary" @click="joinRoom(room.id)">Join Room</v-btn>
-          <v-btn :to="'/room/' + room.id">Enter Room</v-btn>
-        </v-list-item-action>
-      </v-list-item>
+      <v-expansion-panels variant="accordion">
+        <v-expansion-panel v-for="room in rooms" :key="room.id">
+        
+          <v-expansion-panel-title>
+            <v-btn icon="mdi-login" :to="'/room/' + room.id"></v-btn>
+            &nbsp;
+            {{ room.name }} 
+          </v-expansion-panel-title>
+
+          <v-expansion-panel-text>
+
+            <v-btn :to="'/room/' + room.id">Enter Room</v-btn>
+            <br />
+
+            <v-btn color="primary" @click="joinRoom(room.id)">Join Room-Notificationlist</v-btn>
+          </v-expansion-panel-text>
+
+        </v-expansion-panel>
+      </v-expansion-panels>
+
     </v-list>
 
     <v-alert v-if="successMessage" type="success">
@@ -24,13 +38,14 @@
 
 <script>
 import axios from 'axios';
-import { useAuthStore } from '@/stores/authStore'; // Deinen Pinia-Store importieren
+import { useAuthStore } from '@/stores/authStore';
+import { RoomService } from '@/services/roomService';
 
 export default {
   setup() {
-    const authStore = useAuthStore();  // Zugriff auf den AuthStore
+    const authStore = useAuthStore();
 
-    return { authStore }; // Rückgabe des Stores für die Nutzung in der Komponente
+    return { authStore };
   },
   data() {
     return {
@@ -42,8 +57,7 @@ export default {
   async created() {
     // Räume vom Backend abrufen
     try {
-      const response = await axios.get('http://localhost:5177/api/Room/all');
-      this.rooms = response.data;
+      this.rooms = await RoomService.getRooms();
     } catch (error) {
       console.error('Fehler beim Abrufen der Räume:', error);
     }
@@ -56,6 +70,11 @@ export default {
           userId: userId
         });
         this.successMessage = `Du bist dem Raum beigetreten!`;
+
+        setTimeout(() => {
+          this.successMessage = "";
+        }, 2000);
+
       } catch (error) {
         this.errorMessage = 'Fehler beim Beitreten des Raumes.';
         console.error(error);

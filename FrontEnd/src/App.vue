@@ -1,46 +1,44 @@
 <template>
   <v-app>
     <v-app-bar app color="primary" dark>
-      <v-toolbar-title>My Application</v-toolbar-title>
+      <v-btn icon @click="toggleDrawer">
+        <v-icon>mdi-menu</v-icon>
+      </v-btn>
+      <v-toolbar-title>Chat-tool Application</v-toolbar-title>
+      <v-spacer></v-spacer>    
     </v-app-bar>
 
-    <v-navigation-drawer app v-model="isAuthenticated" permanent>
+    <!-- Navigation drawer with v-model controlling its visibility -->
+    <v-navigation-drawer app v-model="drawer" :permanent="false">
       <v-list dense>
         <v-list-subheader>Sidemenu</v-list-subheader>
 
         <v-list-item to="/">
           <template v-slot:prepend>
-            <v-icon icon="mdi-home"></v-icon>
+            <v-icon>mdi-home</v-icon>
           </template>
-          <v-list-item-title v-text="'Home'"></v-list-item-title>
-        </v-list-item>
-
-        <v-list-item to="/chat">
-          <template v-slot:prepend>
-            <v-icon icon="mdi-chat"></v-icon>
-          </template>
-          <v-list-item-title v-text="'Chat'"></v-list-item-title>
+          <v-list-item-title>Home</v-list-item-title>
         </v-list-item>
 
         <v-list-item to="/rooms">
           <template v-slot:prepend>
-            <v-icon icon="mdi-view-list"></v-icon>
+            <v-icon>mdi-view-list</v-icon>
           </template>
-          <v-list-item-title v-text="'Rooms'"></v-list-item-title>
+          <v-list-item-title>Rooms</v-list-item-title>
         </v-list-item>
 
         <v-list-item v-if="!isAuthenticated" to="/login">
           <template v-slot:prepend>
-            <v-icon icon="mdi-login"></v-icon>
+            <v-icon>mdi-login</v-icon>
           </template>
-          <v-list-item-title v-text="'Login'"></v-list-item-title>
+          <v-list-item-title>Login</v-list-item-title>
         </v-list-item>
 
         <v-list-item v-else @click="logout">
           <template v-slot:prepend>
-            <v-icon icon="mdi-logout"></v-icon>
+            <v-icon>mdi-logout</v-icon>
           </template>
-          <v-list-item-title v-text="'Logout'"></v-list-item-title>
+          <v-list-item-title>Logout</v-list-item-title>
         </v-list-item>
       </v-list>
     </v-navigation-drawer>
@@ -57,7 +55,7 @@
 </template>
 
 <script>
-import { onMounted, ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import router from './router';
 import { useAuthStore } from './stores/authStore';
 import { AuthService } from './services/authService';
@@ -66,20 +64,27 @@ export default {
   setup() {
     const authStore = useAuthStore();
     const isAuthenticated = ref(false);
+    const drawer = ref(false); // Controls the drawer visibility
     const user = ref(null);
     const loading = ref(true);
+
+    const toggleDrawer = () => {
+      drawer.value = !drawer.value; // Toggle drawer visibility
+    };
 
     onMounted(async () => {
       await authStore.checkAuth();
       isAuthenticated.value = authStore.isAuthenticated;
       user.value = authStore.user;
-      loading.value = false; 
+      loading.value = false;
     });
 
     return {
       isAuthenticated,
       user,
-      loading
+      loading,
+      drawer, // Drawer state
+      toggleDrawer // Method to toggle drawer
     };
   },
   methods: {

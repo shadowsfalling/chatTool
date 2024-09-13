@@ -16,5 +16,14 @@ export const RoomService = {
       }
     });
     return response.data;
+  },
+  async getRooms() {
+    
+    const response = await axios.get('http://localhost:5177/api/Room/all', {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+    return response.data;
   }
 };
