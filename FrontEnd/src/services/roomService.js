@@ -8,5 +8,13 @@ export const RoomService = {
       }
     });
     return response.data;
+  },
+  async getMessagesOfRoom(roomId) {
+    const response = await axios.get('http://localhost:5176/' + roomId + '/messages', {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+    return response.data;
   }
 };

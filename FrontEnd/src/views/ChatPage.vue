@@ -25,6 +25,7 @@
 <script>
 import { ref, onMounted } from 'vue';
 import { startSignalRConnection } from '@/services/signalrService';
+import { RoomService } from '@/services/roomService';
 import ChatMessage from '../components/ChatMessage.vue';
 import { useAuthStore } from '@/stores/authStore';
 import { useRoute } from 'vue-router';
@@ -47,6 +48,14 @@ export default {
       connection.on("ReceiveMessage", (user, message) => {
         messages.value.push({
           username: user, text: message, timestamp: new Date().toISOString(), avatar: ''
+        });
+      });
+
+      RoomService.getMessagesOfRoom(route.params.roomId).then((m) => {
+        m.forEach(message => {
+          messages.value.push({
+            username: message.userId, text: message.content, timestamp: message.timestamp, avatar: ''
+          })
         });
       });
 
