@@ -90,6 +90,7 @@ builder.Services.AddScoped(typeof(MessageDispatcher<>));
 
 builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<UserService.Services.UserService>();
+builder.Services.AddScoped<SeederService>();
 builder.Services.AddSingleton<IServiceScopeFactory>(sp => sp.GetRequiredService<IServiceScopeFactory>());
 
 builder.Services.AddControllers();
