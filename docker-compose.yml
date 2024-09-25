@@ -97,7 +97,7 @@ services:
       - mynetwork
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-       - ConnectionStrings__DefaultConnection=Server=mysql-chat-db;Port=3306;Database=chatdb;User=chatuser;Password=chatpassword
+      - ConnectionStrings__DefaultConnection=Server=mysql-chat-db;Port=3306;Database=chatdb;User=chatuser;Password=chatpassword
     restart: always
 
   room-service:

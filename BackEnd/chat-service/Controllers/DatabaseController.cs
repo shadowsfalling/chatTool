@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using UserService.Services;
+using ChatService.Services;
 
 [Route("api/[controller]")]
 [ApiController]

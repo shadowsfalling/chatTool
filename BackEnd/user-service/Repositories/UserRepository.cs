@@ -23,5 +23,6 @@ namespace UserService.Repositories
         public async Task<User?> GetUserByUsernameAsync(string username) {
             return await _userDbContext.Users.FirstOrDefaultAsync(u => u.Username == username);
         }
+
     }
 }

@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using UserService.Services;
+using RoomService.Services;
 
 [Route("api/[controller]")]
 [ApiController]

@@ -45,6 +45,12 @@ namespace UserService.Controllers
                 return BadRequest();
             }
 
+            var existingUser = await _userRepository.GetUserByUsernameAsync(registerDto.Username);
+            if (existingUser != null)
+            {
+                return Conflict("Username or Email already exists.");
+            }
+
             var user = new User()
             {
                 Email = registerDto.Email,

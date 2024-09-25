@@ -5,15 +5,23 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using ChatService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSignalR();
 
+// Register DbContext
 builder.Services.AddDbContext<ChatDbContext>(options =>
     options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"),
     new MySqlServerVersion(new Version(8, 0, 21))));
 
+
+builder.Services.AddScoped<MessageRepository>();
+builder.Services.AddScoped<SeederService>();
+builder.Services.AddScoped<ChatService.Services.ChatService>();
+
+// JWT authentication configuration
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -22,11 +30,10 @@ builder.Services.AddAuthentication(options =>
 .AddJwtBearer(options =>
 {
     var key = Encoding.UTF8.GetBytes(builder.Configuration.GetSection("Jwt")["Key"]);
-    options.Events = new JwtBearerEvents
+        options.Events = new JwtBearerEvents
     {
         OnAuthenticationFailed = context =>
         {
-            Console.WriteLine("Authentication failed: " + context.Exception.Message);
             return Task.CompletedTask;
         },
         OnTokenValidated = context =>
@@ -48,8 +55,23 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+// Add CORS policy
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowSpecificOrigins", builder =>
+    {
+        builder
+            .WithOrigins("http://localhost:8080") // Adjust this to your frontend URL
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials();
+    });
+});
+
+// Swagger configuration
 builder.Services.AddSwaggerGen(c =>
 {
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Chat API", Version = "v1" });
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -90,9 +112,6 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-builder.Services.AddScoped<MessageRepository>();
 
 builder.Services.AddLogging(config =>
 {
@@ -102,23 +121,20 @@ builder.Services.AddLogging(config =>
 
 var app = builder.Build();
 
+// Enable Swagger in development mode
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
-
-// Reihenfolge beachten
 app.UseCors("AllowSpecificOrigins");
 
+app.UseHttpsRedirection();
+
 app.UseRouting();
-
-// Authentication vor Authorization
 app.UseAuthentication();
-
-app.UseAuthorization(); // Verschieben zwischen Routing und Endpoints
+app.UseAuthorization();
 
 app.UseEndpoints(endpoints =>
 {
@@ -130,6 +146,7 @@ app.MapControllers();
 
 app.Run();
 
+// Migrate the database
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ChatDbContext>();

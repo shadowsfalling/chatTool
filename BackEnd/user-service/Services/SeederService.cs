@@ -1,5 +1,3 @@
-using System;
-using System.Linq;
 using Microsoft.EntityFrameworkCore;
 
 namespace UserService.Services
@@ -21,6 +19,13 @@ namespace UserService.Services
                 {
                     Username = "testuser",
                     Email = "testuser@example.com",
+                    Password = UserService.HashPassword("password123")
+                });
+
+                _context.Users.Add(new User
+                {
+                    Username = "otheruser",
+                    Email = "otheruser@example.com",
                     Password = UserService.HashPassword("password123")
                 });
 

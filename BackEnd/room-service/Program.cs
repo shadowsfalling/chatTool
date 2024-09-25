@@ -30,6 +30,7 @@ builder.Services.AddSingleton<IConnection>(sp =>
 
 // Register RoomService
 builder.Services.AddScoped<RoomService.Services.RoomService>();
+builder.Services.AddScoped<RoomService.Services.SeederService>();
 
 // JWT authentication configuration
 builder.Services.AddAuthentication(options =>
