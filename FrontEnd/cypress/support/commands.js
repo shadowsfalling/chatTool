@@ -23,6 +23,7 @@
 //
 // -- This will overwrite an existing command --
 // Cypress.Commands.overwrite('visit', (originalFn, url, options) => { ... })
+import 'cypress-wait-until';
 
 Cypress.Commands.add('login', () => {
     cy.visit('/login'); // Die Login-Seite deiner Anwendung
@@ -37,7 +38,7 @@ Cypress.Commands.add('resetDb', () => {
     cy.request({
         method: 'POST',
         url: 'http://localhost:5175/api/Database/reset',
-    }).then(() => {      
+    }).then(() => {
         cy.request({
             method: 'POST',
             url: 'http://localhost:5175/api/Database/seed',
@@ -54,4 +55,13 @@ Cypress.Commands.add('resetDb', () => {
         });
 
     });
+});
+
+Cypress.Commands.add('loginDesktop', () => {
+
+    cy.visit('http://localhost:8080'); // Passe den Pfad an die URL an, auf der die Raumliste gerendert wird
+
+    cy.get('#input-7').type('testuser');
+    cy.get('#input-9').type('password123');
+    cy.get('.v-form > .v-btn').click();
 });
