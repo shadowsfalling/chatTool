@@ -23,3 +23,35 @@
 //
 // -- This will overwrite an existing command --
 // Cypress.Commands.overwrite('visit', (originalFn, url, options) => { ... })
+
+Cypress.Commands.add('login', () => {
+    cy.visit('/login'); // Die Login-Seite deiner Anwendung
+    cy.get('input[name="username"]').type('deinBenutzername'); // Passe die Selektoren und Eingaben an
+    cy.get('input[name="password"]').type('deinPasswort');
+    cy.get('button[type="submit"]').click(); // Passe den Button-Selektor an
+    // Warte ggf. auf ein Element nach dem erfolgreichen Login, z.B. die Navigation zur Startseite
+    cy.url().should('include', '/dashboard'); // Beispiel: Prüfung, ob die URL nach dem Login korrekt ist
+});
+
+Cypress.Commands.add('resetDb', () => {
+    cy.request({
+        method: 'POST',
+        url: 'http://localhost:5175/api/Database/reset',
+    }).then(() => {      
+        cy.request({
+            method: 'POST',
+            url: 'http://localhost:5175/api/Database/seed',
+        });
+
+        cy.request({
+            method: 'POST',
+            url: 'http://localhost:5176/api/Database/seed',
+        });
+
+        cy.request({
+            method: 'POST',
+            url: 'http://localhost:5177/api/Database/seed',
+        });
+
+    });
+});

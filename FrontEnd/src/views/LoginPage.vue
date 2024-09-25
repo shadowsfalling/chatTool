@@ -30,27 +30,34 @@
 </template>
 
 <script>
+import { ref } from 'vue'; 
 import { AuthService } from '@/services/authService';
 import router from '@/router';
+import { useAuthStore } from '@/stores/authStore';
 
 export default {
-  data() {
-    return {
-      username: '',
-      password: '',
-      errorMessage: ''
+  setup() {
+    const authStore = useAuthStore(); // Verwende Pinia oder Vuex, je nachdem was du verwendest
+    const username = ref('');
+    const password = ref('');
+    const errorMessage = ref('');
+
+    const login = async () => {
+      try {
+        await AuthService.login(username.value, password.value);
+        await authStore.checkAuth(); // Überprüfe, ob der Benutzer eingeloggt ist
+        router.push('/'); // Redirect to home page after successful login
+      } catch (error) {
+        errorMessage.value = 'Invalid credentials';
+      }
     };
-  },
-  methods: {
-    login() {
-      AuthService.login(this.username, this.password)
-        .then(() => {
-          router.push('/'); // Redirect to home page after successful login
-        })
-        .catch(() => {
-          this.errorMessage = 'Invalid credentials';
-        });
-    }
+
+    return {
+      username,
+      password,
+      errorMessage,
+      login,
+    };
   }
 };
 </script>
