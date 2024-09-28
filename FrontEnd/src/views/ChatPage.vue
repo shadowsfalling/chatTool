@@ -42,25 +42,42 @@ export default {
     let connection;
 
     onMounted(async () => {
-      await authStore.checkAuth();
-      connection = await startSignalRConnection();
+      try {
+        await authStore.checkAuth();
+        connection = await startSignalRConnection();
 
-      connection.on("ReceiveMessage", (user, message) => {
-        messages.value.push({
-          username: user, text: message, timestamp: new Date().toISOString(), avatar: ''
-        });
-      });
+        if (connection) {
+          window.connection = connection;
+          console.log('SignalR connection established:', connection);
+        } else {
+          console.error('Failed to establish SignalR connection');
+        }
 
-      RoomService.getMessagesOfRoom(route.params.roomId).then((m) => {
-        m.forEach(message => {
+        connection.on("ReceiveMessage", (user, message) => {
           messages.value.push({
-            username: message.userId, text: message.content, timestamp: message.timestamp, avatar: ''
-          })
+            username: user,
+            text: message,
+            timestamp: new Date().toISOString(),
+            avatar: ''
+          });
         });
-      });
 
-      currentRoom.value = route.params.roomId;
-      await joinRoom();
+        RoomService.getMessagesOfRoom(route.params.roomId).then((m) => {
+          m.forEach(message => {
+            messages.value.push({
+              username: message.userId,
+              text: message.content,
+              timestamp: message.timestamp,
+              avatar: ''
+            });
+          });
+        });
+
+        currentRoom.value = route.params.roomId;
+        await joinRoom();
+      } catch (error) {
+        console.error('Error in SignalR setup:', error);
+      }
     });
 
     const sendChatMessage = () => {

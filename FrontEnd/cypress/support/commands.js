@@ -65,3 +65,12 @@ Cypress.Commands.add('loginDesktop', () => {
     cy.get('#input-9').type('password123');
     cy.get('.v-form > .v-btn').click();
 });
+
+Cypress.Commands.add('setAuthHeader', (authToken) => {
+    Cypress.env('authToken', authToken);
+    
+    cy.intercept('POST', '**/api/room/send', (req) => {
+      req.headers['Authorization'] = `Bearer ${Cypress.env('authToken')}`;
+      req.continue();
+    }).as('sendRequest');
+  });
